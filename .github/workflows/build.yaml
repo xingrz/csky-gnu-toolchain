@@ -1,0 +1,68 @@
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Install dependencies (Ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install -y \
+              autoconf automake autotools-dev curl python3 libmpc-dev libmpfr-dev \
+              libgmp-dev gawk build-essential bison flex texinfo gperf libtool \
+              patchutils bc zlib1g-dev libexpat-dev git
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: ${{ github.workspace }}/gcc
+
+      - name: Restore submodules cache
+        id: cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ github.workspace }}/gcc/.git/modules
+          key: gitmodules-${{ hashFiles('gcc/.gitmodules') }}
+
+      - name: Initialize submodules
+        working-directory: ${{ github.workspace }}/gcc
+        run: git submodule update --init --recursive --progress --recommend-shallow
+
+      - name: Save submodules cache
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/gcc/.git/modules
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+
+      - name: Build toolchain
+        working-directory: ${{ github.workspace }}/gcc
+        run: |
+          ./build-csky-gcc.py csky-gcc \
+            --src . \
+            --triple csky-unknown-elf \
+            --no-multilib \
+            --cpu ck804ef \
+            --fpu hard \
+            --endian little \
+            --jobs=$(nproc)
+
+      - name: Make tarball
+        run: |
+          tar czvf csky-unknown-elf.tar.gz \
+            -C ${{ github.workspace }}/gcc/build-gcc-csky-unknown-elf/ \
+            Xuantie-800-gcc-elf-newlib-x86_64/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: csky-unknown-elf-${{ matrix.os }}
+          path: csky-unknown-elf.tar.gz
