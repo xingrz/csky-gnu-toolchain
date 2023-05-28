@@ -27,7 +27,7 @@ def option_init():
                                                                               "csky-unknown-linux-gnu"],
                                required=True)
     parent_parser.add_argument('--host', help="The host type for cross build compiler", default="x86_64",
-                               choices=["x86_64", "i386", "mingw", "Win32", "Win64"])
+                               choices=["x86_64", "i386", "mingw", "Win32", "Win64", "mac"])
     parent_parser.add_argument('--src', help="The directory of source code",
                                required=True)
     parent_parser.add_argument('--jobs', help="Allow N jobs at once, -1 means -j", default=16, type=int)
