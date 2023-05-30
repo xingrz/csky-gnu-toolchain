@@ -65,7 +65,7 @@ jobs:
         run: |
           ./build-csky-gcc.py csky-gcc \
             --src . \
-            --triple csky-unknown-elf \
+            --triple csky-minilibc-elf \
             --host ${{ matrix.host }} \
             --no-multilib \
             --cpu ck804ef \

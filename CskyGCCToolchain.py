@@ -361,14 +361,10 @@ WARNINGS="-Wall"
                 elif self.libc == "minilibc":
                     if os.path.exists(build_dir):
                         self.rm(build_dir)
-                    self.copy(os.path.join(self.src, "minilibc"), build_dir)
-                    float_opt = "-DCONFIG_CSKY_FPU" if self.has_float_isa(opt) else ""
-                    optimize_size = "-Os" if self.size_prefer(opt) else ""
-                    cflags = "{} {} {}".format(opt, float_opt, optimize_size)
-                    self.execute('CFLAGS="{}" TOOLCHAIN_PREFIX={}- PREFIX={}/ DEVEL_PREFIX={}/ INSTALL_SUB_DIR={} '
-                                 'make -j{} install'.format(cflags, self.triple, self.install_dir, self.triple,
-                                                            path, self.jobs),
-                                 cwd=build_dir)
+                    self.mkdir(build_dir, parent=True)
+                    self.execute('tar xvf {}'.format(os.path.join(self.src, "elf_minilibc_base.tar.gz")), cwd=build_dir)
+                    self.execute('cp -rf csky-abiv2-elf/* {}'.format(
+                        os.path.join(self.install_dir, "csky-minilibc-elf")), cwd=build_dir)
                 self.add_stamp(build_name)
 
     def build(self):
@@ -413,11 +409,6 @@ WARNINGS="-Wall"
                 except FindException:
                     break
             self.add_stamp("remove-crt")
-        if self.libc == "minilibc" and not self.has_stamp("install-minilibc-header"):
-            build_dir = os.path.join(self.src, "minilibc")
-            self.execute("make install_headers PREFIX={}/ DEVEL_PREFIX={}/".format(self.install_dir, self.triple),
-                         cwd=build_dir)
-            self.add_stamp("install-minilibc-header")
         self.build_libc()
         if self.libc == "glibc" and not self.has_stamp("fix-crt0-and-include"):
             for root, dirs, files in os.walk(self.sysroot):
